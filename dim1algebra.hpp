@@ -4,10 +4,6 @@
  * @brief Operator that work on a STL container, such as vector or list
  * @file dim1algebra.hpp
  * 
- * This file is created at Almende B.V. and Distributed Organisms B.V. It is open-source software and belongs to a
- * larger suite of software that is meant for research on self-organization principles and multi-agent systems where
- * learning algorithms are an important aspect.
- *
  * This software is published under the GNU Lesser General Public license (LGPL).
  *
  * It is not possible to add usage restrictions to an open-source license. Nevertheless, we personally strongly object
@@ -17,11 +13,6 @@
  * Copyright (c) 2013 Anne C. van Rossum <anne@almende.org>
  *
  * @author    Anne C. van Rossum
- * @date      Jul 24, 2013
- * @project   Replicator 
- * @company   Almende B.V.
- * @company   Distributed Organisms B.V.
- * @case      Sensor fusion
  */
 
 #ifndef DIM1ALGEBRA_HPP_
@@ -41,6 +32,8 @@
 #include <sstream>
 #include <limits>
 #include <set>
+
+#include <random>
 
 /***********************************************************************************************************************
  * General README for dim1algebra.hpp
@@ -84,7 +77,7 @@
  * We do not define the ASSERT_X functions if already defined before. For example gtest/gtest.h.
  */
 
-namespace dobots {
+namespace algebra {
 
 //! Helper function for printing asserts
 #ifndef ASSERT
@@ -867,10 +860,10 @@ extract_copy(InputIterator first, InputIterator last, InputIterator position,
 		OutputIterator result, Tp& value) {
 	// concept requirements
 	__glibcxx_function_requires(_InputIteratorConcept<InputIterator>);
-	__glibcxx_function_requires(_OutputIteratorConcept<OutputIterator,
-			typename iterator_traits<_InputIterator>::value_type>);
-	__glibcxx_function_requires(_EqualOpConcept<
-			typename iterator_traits<_InputIterator>::value_type, Tp>);
+//	__glibcxx_function_requires(_OutputIteratorConcept<OutputIterator,
+//			typename iterator_traits<_InputIterator>::value_type>);
+//	__glibcxx_function_requires(_EqualOpConcept<
+//			typename iterator_traits<_InputIterator>::value_type, Tp>);
 	__glibcxx_requires_valid_range(first, last);
 
 	for (; first != last; ++first) {
@@ -1720,7 +1713,7 @@ template<typename InputIterator, typename T>
 void pushpop(InputIterator first, InputIterator last, T item, RotateDirection direction = RD_RIGHT) {
 	__glibcxx_function_requires(_InputIteratorConcept<InputIterator>);
 	__glibcxx_requires_valid_range(first, last);
-	dobots::rotate(first, last, direction);
+	algebra::rotate(first, last, direction);
 	// overwrite first item
 	*first = item;
 }
@@ -1833,19 +1826,21 @@ count(InputIterator first, InputIterator last, OutputIterator result) {
  * The function random_subset returns a (small) random subset from a large STL container. It is
  * different from using std::random_shuffle and then picking the first k elements. It is namely
  * of the order O(k) and not of the order O(N) with k the number of elements to pick, and N the
- * total number of elements. It is the so-called Floyd Algorithm.
+ * total number of elements. It is known as the so-called Floyd Algorithm.
+ *
  * @see http://eyalsch.wordpress.com/2010/04/01/random-sample/
  *
  * @ingroup random_algorithms
  * @param first              start of range
  * @param last               end of range
  * @param int                number of elements
+ * @param gen                random generator to use
  * @param result             output set with random elements
  * @return Iterator          referencing the first instance of the random subset
  */
-template<typename ForwardIterator, typename OutputIterator>
+template<typename ForwardIterator, typename OutputIterator, typename RandomGenerator>
 OutputIterator
-random_subset(ForwardIterator first, ForwardIterator last, int elements, OutputIterator result)
+random_subset(ForwardIterator first, ForwardIterator last, int elements, RandomGenerator & gen, OutputIterator result)
 {
 	// concept requirements
 	typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
@@ -1860,7 +1855,8 @@ random_subset(ForwardIterator first, ForwardIterator last, int elements, OutputI
 
 	std::set<int> indices; indices.clear();
 	for (ForwardIterator i = last - elements; i != last; ++i) {
-		int pos = std::rand() % (int)((i - first)+1); // pick a random index
+		std::uniform_int_distribution<> dis(0, std::distance(first, i));
+		int pos = dis(gen);
 		if (indices.find(pos) != indices.end()) {
 			indices.insert(i-first);
 			*result = *i;
@@ -1871,6 +1867,72 @@ random_subset(ForwardIterator first, ForwardIterator last, int elements, OutputI
 		++result;
 	}
 	return result;
+}
+
+/**
+ * @brief Returns a random subset from a potentially very large set
+ * The function random_subset returns a (small) random subset from a large STL container. It is
+ * different from using std::random_shuffle and then picking the first k elements. It is namely
+ * of the order O(k) and not of the order O(N) with k the number of elements to pick, and N the
+ * total number of elements. It is known as the so-called Floyd Algorithm.
+ *
+ * @see http://eyalsch.wordpress.com/2010/04/01/random-sample/
+ *
+ * @ingroup random_algorithms
+ * @param first              start of range
+ * @param last               end of range
+ * @param int                number of elements
+ * @param result             output set with random elements
+ * @return Iterator          referencing the first instance of the random subset
+ */
+template<typename ForwardIterator, typename OutputIterator>
+OutputIterator
+random_subset(ForwardIterator first, ForwardIterator last, int elements, OutputIterator result)
+{
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	return random_subset(first, last, elements, gen, result);
+}
+
+/**
+ * @brief Reorders input in-place
+ * This algorithm is known as the Fisher-Yates shuffle and in particular the modern variant by Durstenfeld.
+ *
+ * @ingroup random_algorithms
+ * @param first              start of range
+ * @param last               end of range
+ * @param gen                random generator to use
+ * @param result             output set with random elements
+ * @return Iterator          referencing the first instance of the random subset
+ */
+template<typename ForwardIterator, typename RandomGenerator>
+void
+random_order(ForwardIterator first, ForwardIterator last, RandomGenerator & gen)
+{
+	// concept requirements
+	typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
+
+	__glibcxx_function_requires(_ForwardIteratorConcept<ForwardIterator>);
+	__glibcxx_requires_valid_range(first, last);
+
+	if (first == last)
+		return;
+
+	for (ForwardIterator i = first; i != last; ++i) {
+		std::uniform_int_distribution<> dis(std::distance(first, i), std::distance(first, last) - 1);
+		int pos = dis(gen);
+		std::swap(*i, *(first+pos));
+	}
+}
+
+template<typename ForwardIterator>
+void
+random_order(ForwardIterator first, ForwardIterator last)
+{
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	return random_order(first, last, gen);
 }
 
 /***********************************************************************************************************************
@@ -1979,7 +2041,7 @@ set_nan(InputIterator first, InputIterator last, T value) {
 	}
 }
 
-// end of namespace dobots
+// end of namespace algebra
 
 
 /**
