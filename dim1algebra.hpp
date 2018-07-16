@@ -841,6 +841,35 @@ T distance(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, I
 }
 
 /**
+ * Requires two sorted ranges. Within each range there should not be duplicate values. Returns the Jaccard index. 
+ */
+template<typename T, typename InputIterator1, typename InputIterator2>
+T set_jaccard_index(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2) {
+	T result = std::distance(first2,last2) + std::distance(first1,last1);
+
+	return result - set_intersection_size(first1,last1,first2,last2);
+}
+
+/**
+ * Requires two sorted ranges. Returns the size of the intersection.
+ */
+template <typename T, typename InputIterator1, typename InputIterator2>
+  T set_intersection_size (InputIterator1 first1, InputIterator1 last1,
+                                   InputIterator2 first2, InputIterator2 last2)
+{
+	T result = T(0);
+	while (first1!=last1 && first2!=last2)
+	{
+		if (*first1<*first2) ++first1;
+		else if (*first2<*first1) ++first2;
+		else {
+			result++;
+		}
+	}
+	return result;
+}
+
+/**
  * Functionality of extract_copy is like remove_copy for the vector container. However, in this case the item is still
  * important, so it will be returned in the parameter value. This is a slow implementation, but it might be nice to do
  * your first implementation of Gibbs sampling using this function. The leave-one-out methods are abundant in science.
