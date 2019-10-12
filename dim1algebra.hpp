@@ -10,7 +10,7 @@
  * against this software being used for military purposes, factory farming, animal experimentation, and "Universal
  * Declaration of Human Rights" violations.
  *
- * Copyright (c) 2013 Anne C. van Rossum <anne@almende.org>
+ * Copyright (c) 2013 Anne C. van Rossum <anne@crownstone.rocks>
  *
  * @author    Anne C. van Rossum
  */
@@ -32,6 +32,8 @@
 #include <sstream>
 #include <limits>
 #include <set>
+#include <unordered_map>
+#include <vector>
 
 #include <random>
 
@@ -787,21 +789,21 @@ void decreaseDistance(InputIterator1 first1, InputIterator1 last1, InputIterator
 /**
  * This function tells something about the "distance" between containers, in other words the similarity or
  * dissimilarity. There are currently several metrics implemented:
- *   DM_DOTPRODUCT:			return sum_i { x_i*y_i }
- *   DM_EUCLIDEAN:			return sqrt (sum_i { (x_i-y_i)^2 } )
- *   DM_BHATTACHARYYA:			return -ln (sum_i { sqrt (x_i*y_i) } )
- *   DM_HELLINGER:			return sqrt (sum_i { (sqrt(x_i)-sqrt(y_i))^2 } ) * 1/sqrt(2)
- *   DM_CHEBYSHEV:			return max_i abs(x_i-y_i)
- *   DM_MANHATTAN:			return sum_i { abs(x_i-y_i) }
+ *   DM_DOTPRODUCT:          return sum_i { x_i*y_i }
+ *   DM_EUCLIDEAN:           return sqrt (sum_i { (x_i-y_i)^2 } )
+ *   DM_BHATTACHARYYA:       return -ln (sum_i { sqrt (x_i*y_i) } )
+ *   DM_HELLINGER:           return sqrt (sum_i { (sqrt(x_i)-sqrt(y_i))^2 } ) * 1/sqrt(2)
+ *   DM_CHEBYSHEV:           return max_i abs(x_i-y_i)
+ *   DM_MANHATTAN:           return sum_i { abs(x_i-y_i) }
  * And there are some other measures that can be used as metrics. Such as the Bhattacharyya coefficient
  * and the squared Hellinger distance.
  * It is assumed that the containers are of equal size.
- * @param first1			start of the first container
- * @param last1				end of the first container
- * @param first2			start of the second container
- * @param last2				end of the second container
+ * @param first1             start of the first container
+ * @param last1              end of the first container
+ * @param first2             start of the second container
+ * @param last2              end of the second container
  * @param metric			a certain distance metric
- * @return				the distance between the two containers
+ * @return                   the distance between the two containers
  */
 template<typename T, typename InputIterator1, typename InputIterator2>
 T distance(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, DistanceMetric metric) {
@@ -842,6 +844,11 @@ T distance(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, I
 
 /**
  * Requires two sorted ranges. Within each range there should not be duplicate values. Returns the Jaccard index. 
+ * @param first1             start of the first container
+ * @param last1              end of the first container
+ * @param first2             start of the second container
+ * @param last2              end of the second container
+ * @return                   the Jaccard index between the two containers
  */
 template<typename T, typename InputIterator1, typename InputIterator2>
 T set_jaccard_index(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2) {
@@ -852,6 +859,11 @@ T set_jaccard_index(InputIterator1 first1, InputIterator1 last1, InputIterator2 
 
 /**
  * Requires two sorted ranges. Returns the size of the intersection.
+ * @param first1             start of the first container
+ * @param last1              end of the first container
+ * @param first2             start of the second container
+ * @param last2              end of the second container
+ * @return                   the Jaccard index between the two containers
  */
 template <typename T, typename InputIterator1, typename InputIterator2>
   T set_intersection_size (InputIterator1 first1, InputIterator1 last1,
@@ -1768,7 +1780,7 @@ template<typename ForwardIterator, typename UnaryOperation>
 ForwardIterator
 argmin(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op) {
 
-	typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
 
 	// concept requirements
 	__glibcxx_function_requires(_ForwardIteratorConcept<ForwardIterator>);
@@ -1823,7 +1835,7 @@ ForwardIterator exceeds_element(ForwardIterator first, ForwardIterator last, T t
 template<typename InputIterator, typename OutputIterator>
 OutputIterator
 count(InputIterator first, InputIterator last, OutputIterator result) {
-	typedef typename std::iterator_traits<InputIterator>::value_type ValueType1;
+	__attribute__((unused)) typedef typename std::iterator_traits<InputIterator>::value_type ValueType1;
 	typedef typename std::iterator_traits<OutputIterator>::value_type ValueType2;
 
 	// empty input, do nothing
@@ -1845,6 +1857,40 @@ count(InputIterator first, InputIterator last, OutputIterator result) {
 	result++;
 }
 
+/**
+ * Number of unique elements in a container. Different from std::unique this does not make a vector unique by erasing
+ * duplicates, but counts the number of unique elements.
+ *
+ * @param first              start of range
+ * @param last               end of range
+ * @return                   number of unique elements
+ */
+template<typename InputIterator>
+size_t
+count_unique(InputIterator first, InputIterator last) {
+	__attribute__((unused)) typedef typename std::iterator_traits<InputIterator>::value_type ValueType;
+
+	std::set<ValueType> _set;
+	
+	while (first != last) {
+		_set.insert(*first);
+		first++;
+	}
+	return _set.size();
+}
+
+/***********************************************************************************************************************
+ * Fill in particular ways
+ **********************************************************************************************************************/
+
+template<typename ForwardIterator>
+void
+fill_successively(ForwardIterator first, ForwardIterator last)
+{
+	typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	ValueType i = {0};
+	std::generate(first, last, [&i] { return i++; });
+}
 
 /***********************************************************************************************************************
  * Random
@@ -1855,9 +1901,12 @@ count(InputIterator first, InputIterator last, OutputIterator result) {
  * The function random_subset returns a (small) random subset from a large STL container. It is
  * different from using std::random_shuffle and then picking the first k elements. It is namely
  * of the order O(k) and not of the order O(N) with k the number of elements to pick, and N the
- * total number of elements. It is known as the so-called Floyd Algorithm.
+ * total number of elements. 
  *
+ * First I implemented the so-called Floyd Algorithm. 
  * @see http://eyalsch.wordpress.com/2010/04/01/random-sample/
+ * However, I didn't like the fact that the order of elements picked is not uniformly random when the number of
+ * elements to pick is the size of the array or close to it. For m=n the result is not even shuffled.
  *
  * @ingroup random_algorithms
  * @param first              start of range
@@ -1867,13 +1916,14 @@ count(InputIterator first, InputIterator last, OutputIterator result) {
  * @param result             output set with random elements
  * @return Iterator          referencing the first instance of the random subset
  */
+/*
 template<typename ForwardIterator, typename OutputIterator, typename RandomGenerator>
 OutputIterator
 random_subset(ForwardIterator first, ForwardIterator last, int elements, RandomGenerator & gen, OutputIterator result)
 {
 	// concept requirements
-	typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
-	typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
 
 	__glibcxx_function_requires(_ForwardIteratorConcept<ForwardIterator>);
 	__glibcxx_requires_valid_range(first, last);
@@ -1882,6 +1932,38 @@ random_subset(ForwardIterator first, ForwardIterator last, int elements, RandomG
 	if (first == last)
 		return first;
 
+	if (last - first < elements) {
+		elements = last-first;
+	}
+
+	std::unordered_map<int, int> indices;
+	std::unordered_map<int, std::vector<int> > swap_struct;
+	for (int i = 0; i != elements; ++i) { // order O(k)
+		int m = (last - 1 - first) - i;
+		std::uniform_int_distribution<> dis(0, m);
+		int pos = dis(gen);
+		if (swap_struct.find(m) == swap_struct.end()) { // order O(k)
+			swap_struct[pos].push_back(m);
+		} else {
+			int mm = swap_struct[m].back();
+			swap_struct[pos].push_back(mm);
+		}
+		int rpos = swap_struct.size() - 1;
+		if (indices.find(rpos) == indices.end()) indices[ rpos ] = pos; // order O(k)
+	}
+		
+	for (int j = 0; j < (int) indices.size(); ++j) { // order O(k)
+		int pos = indices[j];
+		*result = *(first + pos);
+		++result;
+		std::vector<int> & tmp = swap_struct[pos];
+		for (int i = 0; i != (int)tmp.size() - 1; ++i) {
+			*result = *(first + tmp[i]);
+			++result;
+		}
+	}
+
+#ifdef NOT_UNIFORM_FOR_M_NEAR_N
 	std::set<int> indices; indices.clear();
 	for (ForwardIterator i = last - elements; i != last; ++i) {
 		std::uniform_int_distribution<> dis(0, std::distance(first, i));
@@ -1895,8 +1977,10 @@ random_subset(ForwardIterator first, ForwardIterator last, int elements, RandomG
 		}
 		++result;
 	}
+#endif
 	return result;
 }
+*/
 
 /**
  * @brief Returns a random subset from a potentially very large set
@@ -1914,6 +1998,7 @@ random_subset(ForwardIterator first, ForwardIterator last, int elements, RandomG
  * @param result             output set with random elements
  * @return Iterator          referencing the first instance of the random subset
  */
+/*
 template<typename ForwardIterator, typename OutputIterator>
 OutputIterator
 random_subset(ForwardIterator first, ForwardIterator last, int elements, OutputIterator result)
@@ -1921,7 +2006,7 @@ random_subset(ForwardIterator first, ForwardIterator last, int elements, OutputI
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	return random_subset(first, last, elements, gen, result);
-}
+}*/
 
 /**
  * @brief Reorders input in-place
@@ -1938,9 +2023,30 @@ template<typename ForwardIterator, typename RandomGenerator>
 void
 random_order(ForwardIterator first, ForwardIterator last, RandomGenerator & gen)
 {
+	std::shuffle(first, last, gen);
+}
+
+/**
+ * @brief Reorders input in-place for first elements.
+ *
+ * This algorithm is known as the Fisher-Yates shuffle and in particular the modern variant by Durstenfeld. We quit
+ * prematurely when the given number of elements have been shuffled leaving the rest of the input invariant.
+ *
+ * @ingroup random_algorithms
+ * @param first              start of range
+ * @param last               end of range
+ * @param elements           number of elements to randomize
+ * @param gen                random generator to use
+ * @param result             output set with random elements
+ * @return Iterator          referencing the first instance of the random subset
+ */
+template<typename ForwardIterator, typename RandomGenerator>
+void
+random_order_subset(ForwardIterator first, ForwardIterator last, int elements, RandomGenerator & gen)
+{
 	// concept requirements
-	typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
-	typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
 
 	__glibcxx_function_requires(_ForwardIteratorConcept<ForwardIterator>);
 	__glibcxx_requires_valid_range(first, last);
@@ -1948,7 +2054,10 @@ random_order(ForwardIterator first, ForwardIterator last, RandomGenerator & gen)
 	if (first == last)
 		return;
 
-	for (ForwardIterator i = first; i != last; ++i) {
+	ForwardIterator end = last;
+	if (first + elements < last) end = first + elements;
+
+	for (ForwardIterator i = first; i != end; ++i) {
 		std::uniform_int_distribution<> dis(std::distance(first, i), std::distance(first, last) - 1);
 		int pos = dis(gen);
 		std::swap(*i, *(first+pos));
@@ -1964,6 +2073,69 @@ random_order(ForwardIterator first, ForwardIterator last)
 	return random_order(first, last, gen);
 }
 
+/**
+ * Pick element from a vector with weights.
+ */
+template<typename ForwardIterator, typename RandomGenerator>
+size_t
+random_weighted_pick(ForwardIterator first, ForwardIterator last, RandomGenerator & gen)
+{
+	// concept requirements
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
+
+	__glibcxx_function_requires(_ForwardIteratorConcept<ForwardIterator>);
+	__glibcxx_requires_valid_range(first, last);
+
+	size_t N = last - first;
+	if (first == last)
+		return 0;
+	
+	std::vector<ValueType> cumsum(N);
+	std::partial_sum(first, last, cumsum.begin());
+		
+	std::uniform_real_distribution<> dis;
+	double u = dis(gen);
+
+	u = u * cumsum.back();
+
+	auto lower = std::lower_bound(cumsum.begin(), cumsum.end(), u);
+	size_t index = std::distance(cumsum.begin(), lower);
+	return index;
+}
+
+template<typename ForwardIterator, typename RandomGenerator>
+size_t
+random_weighted_pick(ForwardIterator first, ForwardIterator last)
+{
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	return random_weighted_pick(first, last, gen);
+}
+
+template<typename ForwardIterator, typename RandomGenerator>
+size_t
+duplicate_pick(ForwardIterator first, ForwardIterator last, RandomGenerator & gen)
+{
+	// concept requirements
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<ForwardIterator>::difference_type DiffType;
+
+	__glibcxx_function_requires(_ForwardIteratorConcept<ForwardIterator>);
+	__glibcxx_requires_valid_range(first, last);
+
+	size_t index = 0;
+
+	std::set<ValueType> set;
+	for (ForwardIterator i = first; i != last; ++i) {
+		set.insert(*i);
+		index = std::distance(first, i);
+		if (set.size() != index + 1) {
+			break;
+		}
+	}
+	return index;
+}
 /***********************************************************************************************************************
  * Subset manipulations
  **********************************************************************************************************************/
@@ -2081,7 +2253,7 @@ set_nan(InputIterator first, InputIterator last, T value) {
  */
 template<typename InputIterator, typename OutputIterator>
 OutputIterator deref(InputIterator first, InputIterator last, OutputIterator result) {
-	typedef typename std::iterator_traits<InputIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<InputIterator>::value_type ValueType;
 	__glibcxx_function_requires(_InputIteratorConcept<InputIterator>);
 	__glibcxx_function_requires(_OutputIteratorConcept<OutputIterator, ValueType>);
 	__glibcxx_requires_valid_range(first1, last1);
@@ -2102,7 +2274,7 @@ OutputIterator deref(InputIterator first, InputIterator last, OutputIterator res
  */
 template<typename InputIterator, typename OutputIterator>
 OutputIterator ref(InputIterator first, InputIterator last, OutputIterator result) {
-	typedef typename std::iterator_traits<InputIterator>::value_type ValueType;
+	__attribute__((unused)) typedef typename std::iterator_traits<InputIterator>::value_type ValueType;
 	__glibcxx_function_requires(_InputIteratorConcept<InputIterator>);
 	__glibcxx_function_requires(_OutputIteratorConcept<OutputIterator, ValueType>);
 	__glibcxx_requires_valid_range(first1, last1);
