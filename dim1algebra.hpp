@@ -787,21 +787,21 @@ void decreaseDistance(InputIterator1 first1, InputIterator1 last1, InputIterator
 /**
  * This function tells something about the "distance" between containers, in other words the similarity or
  * dissimilarity. There are currently several metrics implemented:
- *   DM_DOTPRODUCT:			return sum_i { x_i*y_i }
- *   DM_EUCLIDEAN:			return sqrt (sum_i { (x_i-y_i)^2 } )
- *   DM_BHATTACHARYYA:			return -ln (sum_i { sqrt (x_i*y_i) } )
- *   DM_HELLINGER:			return sqrt (sum_i { (sqrt(x_i)-sqrt(y_i))^2 } ) * 1/sqrt(2)
- *   DM_CHEBYSHEV:			return max_i abs(x_i-y_i)
- *   DM_MANHATTAN:			return sum_i { abs(x_i-y_i) }
+ *   DM_DOTPRODUCT:          return sum_i { x_i*y_i }
+ *   DM_EUCLIDEAN:           return sqrt (sum_i { (x_i-y_i)^2 } )
+ *   DM_BHATTACHARYYA:       return -ln (sum_i { sqrt (x_i*y_i) } )
+ *   DM_HELLINGER:           return sqrt (sum_i { (sqrt(x_i)-sqrt(y_i))^2 } ) * 1/sqrt(2)
+ *   DM_CHEBYSHEV:           return max_i abs(x_i-y_i)
+ *   DM_MANHATTAN:           return sum_i { abs(x_i-y_i) }
  * And there are some other measures that can be used as metrics. Such as the Bhattacharyya coefficient
  * and the squared Hellinger distance.
  * It is assumed that the containers are of equal size.
- * @param first1			start of the first container
- * @param last1				end of the first container
- * @param first2			start of the second container
- * @param last2				end of the second container
+ * @param first1             start of the first container
+ * @param last1              end of the first container
+ * @param first2             start of the second container
+ * @param last2              end of the second container
  * @param metric			a certain distance metric
- * @return				the distance between the two containers
+ * @return                   the distance between the two containers
  */
 template<typename T, typename InputIterator1, typename InputIterator2>
 T distance(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, DistanceMetric metric) {
@@ -1902,7 +1902,11 @@ fill_successively(ForwardIterator first, ForwardIterator last)
  * total number of elements. 
  *
  * First I implemented the so-called Floyd Algorithm. 
+<<<<<<< HEAD
  *   @see http://eyalsch.wordpress.com/2010/04/01/random-sample/
+=======
+ * @see http://eyalsch.wordpress.com/2010/04/01/random-sample/
+>>>>>>> 77964834206a2ca2d7cc8e93ca523d1f0f8035f6
  * However, I didn't like the fact that the order of elements picked is not uniformly random when the number of
  * elements to pick is the size of the array or close to it. For m=n the result is not even shuffled.
  *
@@ -2055,6 +2059,12 @@ random_order_subset(ForwardIterator first, ForwardIterator last, int elements, R
 	ForwardIterator end = last;
 	if (first + elements < last) end = first + elements;
 
+<<<<<<< HEAD
+=======
+	ForwardIterator end = last;
+	if (first + elements < last) end = first + elements;
+
+>>>>>>> 77964834206a2ca2d7cc8e93ca523d1f0f8035f6
 	for (ForwardIterator i = first; i != end; ++i) {
 		std::uniform_int_distribution<> dis(std::distance(first, i), std::distance(first, last) - 1);
 		int pos = dis(gen);
@@ -2135,7 +2145,10 @@ duplicate_pick(ForwardIterator first, ForwardIterator last, RandomGenerator & ge
 	}
 	return index;
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 77964834206a2ca2d7cc8e93ca523d1f0f8035f6
 /***********************************************************************************************************************
  * Subset manipulations
  **********************************************************************************************************************/
